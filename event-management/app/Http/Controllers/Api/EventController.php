@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\EventResource;
 use App\Http\Traits\CanLoadRelationships;
 use App\Models\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -17,7 +18,7 @@ class EventController extends Controller
 
     public function index()
     {
-
+        Gate::authorize('viewAny', Event::class);
         $query = $this->loadRelationships(Event::query());
 
         return EventResource::collection(
@@ -35,7 +36,7 @@ class EventController extends Controller
                 'start_time' => 'required|date',
                 'end_time' => 'required|date|after:start_time'
             ]),
-            'user_id' => 1
+            'user_id' => $request->user()->id
         ]);
 
         return new EventResource($this->loadRelationships($event));
@@ -44,11 +45,15 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-        return new EventResource($this->loadRelationships($event));
+
+        return new EventResource(
+            $this->loadRelationships($event)
+        );
     }
 
     public function update(Request $request, Event $event)
     {
+
         $event->update($request->validate([
                 'name' => 'sometimes|string|max:255',
                 'description' => 'nullable|string',
@@ -62,6 +67,7 @@ class EventController extends Controller
 
     public function destroy(Event $event)
     {
+        
         $event->delete();
 
         return response(status: 204);
